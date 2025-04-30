@@ -28,7 +28,7 @@ def dbscan_clustering(data: pd.DataFrame, eps: float = 0.3, min_samples: int = 5
         eps (float): Jarak maksimum antar data untuk membentuk cluster.
         min_samples (int): Minimum jumlah poin dalam neighborhood untuk core point.
 
-    Returns:S
+    Returns:
         labels (np.array): Label cluster untuk setiap data point.
         model (DBSCAN): Model DBSCAN yang sudah dilatih.
     """
@@ -41,15 +41,14 @@ def evaluate_clustering(data: pd.DataFrame, labels):
     Mengevaluasi hasil clustering menggunakan 3 metrik: Silhouette, Davies-Bouldin, Calinski-Harabasz.
 
     Args:
-        data (pd.DataFrame): Data numerik yang sudah dinormalisasi.
+        data (pd.DataFrame): Data numerik yang sudah diproses (misal hasil PCA).
         labels (np.array): Label cluster untuk setiap data point.
 
     Returns:
         dict: Dictionary berisi hasil evaluasi.
     """
     n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
-    
-    # Kalau cluster valid (≥ 2 cluster)
+
     if n_clusters > 1:
         silhouette = silhouette_score(data, labels)
         davies_bouldin = davies_bouldin_score(data, labels)
@@ -65,5 +64,6 @@ def evaluate_clustering(data: pd.DataFrame, labels):
             "n_clusters": n_clusters,
             "silhouette_score": None,
             "davies_bouldin_index": None,
-            "calinski_harabasz_score": None
+            "calinski_harabasz_score": None,
+            "note": "Clustering tidak valid (mungkin semua noise atau hanya 1 cluster)."
         }
