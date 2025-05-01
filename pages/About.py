@@ -32,8 +32,8 @@ st.subheader("Kontak & Referensi")
 st.markdown(
     """
 Jika ada pertanyaan, silakan hubungi:  
-- Email: your.email@example.com  
-- GitHub: [Link ke repository]
+Email: wajinusantara05@gmail.com  
+GitHub: https://github.com/Whyawww
     """
 )
 

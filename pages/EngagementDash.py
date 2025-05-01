@@ -27,7 +27,7 @@ if model_choice == "KMeans":
 else:
     eps = st.sidebar.slider("Nilai eps (DBSCAN)", 0.05, 1.0, 0.3, step=0.01, format="%.2f")
     min_samples = st.sidebar.slider("Min Samples (DBSCAN)", 2, 10, 3)
-    st.sidebar.caption("💡 Tips DBSCAN:")
+    st.sidebar.caption("💡Tips DBSCAN:")
     st.sidebar.markdown("""
     - **eps** menentukan seberapa dekat poin harus saling berdekatan
     - **min_samples** adalah jumlah poin minimum untuk membentuk cluster
@@ -104,7 +104,7 @@ if start_button:
             # ------------------------- EVALUASI -------------------------
             eval_result = evaluate_clustering(df_normalized, cluster_labels)
 
-            st.header("📊 Evaluasi Clustering")
+            st.header("Evaluasi Clustering")
             if eval_result["n_clusters"] <= 1:
                 st.warning("⚠️ DBSCAN gagal membentuk cluster yang valid. Silakan coba ubah nilai `eps` (naikkan sedikit) atau turunkan `min_samples`.")
                 st.json(eval_result)
@@ -136,6 +136,14 @@ if start_button:
                 st.warning(f"Terdapat {noise_count} video yang dianggap noise (Cluster -1) oleh DBSCAN.")
 
             st.success("Proses analisis selesai!")
+            
+            csv = df_videos.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="Unduh Hasil Analisis (CSV)",
+                data=csv,
+                file_name='hasil_clustering.csv',
+                mime='text/csv',
+            )
 
         except Exception as e:
             st.error(f"Terjadi kesalahan: {e}")
