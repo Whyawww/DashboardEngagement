@@ -10,13 +10,13 @@ def evaluate_clustering(data: pd.DataFrame, labels) -> dict:
 
     Args:
         data (pd.DataFrame): Data numerik setelah preprocessing.
-        labels (array-like): Label hasil clustering.
+        labels (array-like): Label hasil clustering dari KMeans.
 
     Returns:
         dict: Dictionary berisi hasil evaluasi clustering.
     """
-    n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
-    
+    n_clusters = len(set(labels))  # KMeans tidak memiliki label -1
+
     if n_clusters > 1:
         silhouette = silhouette_score(data, labels)
         davies_bouldin = davies_bouldin_score(data, labels)
@@ -29,10 +29,10 @@ def evaluate_clustering(data: pd.DataFrame, labels) -> dict:
             "calinski_harabasz_score": round(calinski_harabasz, 2)
         }
     else:
-        # Jika hanya 1 cluster atau semua noise
         return {
             "n_clusters": n_clusters,
             "silhouette_score": None,
             "davies_bouldin_index": None,
-            "calinski_harabasz_score": None
+            "calinski_harabasz_score": None,
+            "note": "Clustering tidak valid (hanya 1 cluster terbentuk)."
         }

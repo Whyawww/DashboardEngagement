@@ -1,5 +1,5 @@
 import pandas as pd
-from sklearn.cluster import KMeans, DBSCAN
+from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_harabasz_score
 
 def kmeans_clustering(data: pd.DataFrame, n_clusters: int = 3, random_state: int = 42):
@@ -8,31 +8,14 @@ def kmeans_clustering(data: pd.DataFrame, n_clusters: int = 3, random_state: int
 
     Args:
         data (pd.DataFrame): Data numerik yang sudah dinormalisasi.
-        n_clusters (int): Jumlah cluster yang diinginkan.
+        n_clusters (int): Jumlah cluster yang diinginkan (default = 3).
         random_state (int): Seed untuk hasil yang reproducible.
 
     Returns:
         labels (np.array): Label cluster untuk setiap data point.
         model (KMeans): Model KMeans yang sudah dilatih.
     """
-    model = KMeans(n_clusters=n_clusters, random_state=random_state)
-    labels = model.fit_predict(data)
-    return labels, model
-
-def dbscan_clustering(data: pd.DataFrame, eps: float = 0.3, min_samples: int = 5):
-    """
-    Melakukan clustering menggunakan DBSCAN.
-
-    Args:
-        data (pd.DataFrame): Data numerik yang sudah dinormalisasi.
-        eps (float): Jarak maksimum antar data untuk membentuk cluster.
-        min_samples (int): Minimum jumlah poin dalam neighborhood untuk core point.
-
-    Returns:
-        labels (np.array): Label cluster untuk setiap data point.
-        model (DBSCAN): Model DBSCAN yang sudah dilatih.
-    """
-    model = DBSCAN(eps=eps, min_samples=min_samples)
+    model = KMeans(n_clusters=n_clusters, init='k-means++', n_init=10, max_iter=300, random_state=random_state)
     labels = model.fit_predict(data)
     return labels, model
 
@@ -47,7 +30,7 @@ def evaluate_clustering(data: pd.DataFrame, labels):
     Returns:
         dict: Dictionary berisi hasil evaluasi.
     """
-    n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
+    n_clusters = len(set(labels))
 
     if n_clusters > 1:
         silhouette = silhouette_score(data, labels)
@@ -65,5 +48,5 @@ def evaluate_clustering(data: pd.DataFrame, labels):
             "silhouette_score": None,
             "davies_bouldin_index": None,
             "calinski_harabasz_score": None,
-            "note": "Clustering tidak valid (mungkin semua noise atau hanya 1 cluster)."
+            "note": "Clustering tidak valid (mungkin semua masuk dalam satu cluster)."
         }

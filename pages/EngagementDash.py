@@ -2,47 +2,21 @@ import streamlit as st
 import pandas as pd
 
 from src.fetch_data import get_videos_from_playlist, get_video_statistics
-from src.preprocessing import handle_outliers_iqr, normalize_minmax, apply_pca
-from src.clustering import kmeans_clustering, dbscan_clustering, evaluate_clustering
+from src.preprocessing import add_engagement_rate, handle_outliers_iqr, normalize_minmax, apply_pca
+from src.clustering import kmeans_clustering
+from src.evaluation import evaluate_clustering
 from src.visualization import plot_correlation_heatmap, plot_pca_clusters, plot_3d_scatter
 
 # KONFIGURASI HALAMAN
 st.set_page_config(page_title="Dashboard Analisis | YouTube Engagement Analyzer", layout="wide")
 
 st.title("Engagement Dashboard")
-st.markdown("Analisis interaktif pola engagement audiens berdasarkan data dari channel YouTube.")
+st.markdown("🔍 Analisis interaktif pola engagement audiens berdasarkan data dari channel YouTube.")
 
 # ------------------------- SIDEBAR -------------------------
 st.sidebar.title("Konfigurasi Analisis")
-st.sidebar.markdown("Silakan masukkan data dan atur parameter clustering.")
-
-channel_id = st.sidebar.text_input("Masukkan Channel ID")
 playlist_id = st.sidebar.text_input("Masukkan Playlist ID")
-
-st.sidebar.markdown("---")
-model_choice = st.sidebar.selectbox("Pilih Metode Clustering", ("KMeans", "DBSCAN"))
-
-if model_choice == "KMeans":
-    n_clusters = st.sidebar.slider("Jumlah Cluster (KMeans)", 2, 10, 3)
-else:
-    eps = st.sidebar.slider("Nilai eps (DBSCAN)", 0.05, 1.0, 0.3, step=0.01, format="%.2f")
-    min_samples = st.sidebar.slider("Min Samples (DBSCAN)", 2, 10, 3)
-    st.sidebar.caption("💡Tips DBSCAN:")
-    st.sidebar.markdown("""
-    - **eps** menentukan seberapa dekat poin harus saling berdekatan
-    - **min_samples** adalah jumlah poin minimum untuk membentuk cluster
-
-    Saran awal:
-    - eps = `0.05`
-    - min_samples = `3` → ubah jika banyak noise
-
-    Jika semua noise:
-    - Naikkan **eps** → misal `0.06`, `0.07`
-    - Turunkan **min_samples** → misal `2`
-    """)
-
-    st.sidebar.markdown("---")
-
+n_clusters = st.sidebar.slider("Jumlah Cluster (KMeans)", 2, 10, 3)
 start_button = st.sidebar.button("Mulai Analisis")
 
 # ------------------------- LOGIKA UTAMA -------------------------
@@ -54,6 +28,7 @@ if start_button:
             with st.spinner("Mengambil data dari YouTube API..."):
                 video_ids = get_videos_from_playlist(playlist_id)
                 df_videos = get_video_statistics(video_ids)
+                df_videos = add_engagement_rate(df_videos)
 
             st.success(f"Data berhasil diambil! Jumlah video: {len(df_videos)}")
             st.subheader("Sample Data")
@@ -61,12 +36,13 @@ if start_button:
 
             # ------------------------- PREPROCESSING -------------------------
             st.header("Preprocessing Data")
-            features = df_videos[["views", "likes", "comments"]]
+            selected_features = ["views", "likes", "comments", "engagement_rate"]
+            df_selected = df_videos[selected_features]
 
             st.subheader("Distribusi Awal")
-            st.dataframe(features.describe())
+            st.dataframe(df_selected.describe())
 
-            df_cleaned = handle_outliers_iqr(features)
+            df_cleaned = handle_outliers_iqr(df_selected)
             df_normalized = normalize_minmax(df_cleaned)
             df_pca = apply_pca(df_normalized)
 
@@ -80,40 +56,22 @@ if start_button:
             st.pyplot(fig_corr)
 
             # ------------------------- CLUSTERING -------------------------
-            st.header("Clustering Data")
-            if model_choice == "KMeans":
-                cluster_labels, model = kmeans_clustering(df_normalized, n_clusters=n_clusters)
-            else:
-                cluster_labels, model = dbscan_clustering(df_normalized, eps=eps, min_samples=min_samples)
-                # Hitung jumlah cluster valid dan noise
-                n_clusters = len(set(cluster_labels)) - (1 if -1 in cluster_labels else 0)
-                n_noise = list(cluster_labels).count(-1)
+            st.header("Clustering Data dengan KMeans")
+            cluster_labels, model = kmeans_clustering(df_normalized, n_clusters=n_clusters)
+            df_result = df_videos.loc[df_cleaned.index].copy()
+            df_result["Cluster"] = cluster_labels
 
-                # Tampilkan informasi cluster DBSCAN
-                if model_choice == "DBSCAN":
-                    st.info(f"🔎 DBSCAN menghasilkan {n_clusters} cluster dan {n_noise} video dianggap noise.")
-
-
-            # Sinkronisasi hasil
-            df_videos = df_videos.loc[df_cleaned.index].copy()
-            df_videos["Cluster"] = cluster_labels
-
-            st.success(f"Clustering berhasil menggunakan metode **{model_choice}**")
-            
+            st.success(f"Clustering berhasil menggunakan KMeans (k = {n_clusters})")
 
             # ------------------------- EVALUASI -------------------------
             eval_result = evaluate_clustering(df_normalized, cluster_labels)
 
             st.header("Evaluasi Clustering")
-            if eval_result["n_clusters"] <= 1:
-                st.warning("⚠️ DBSCAN gagal membentuk cluster yang valid. Silakan coba ubah nilai `eps` (naikkan sedikit) atau turunkan `min_samples`.")
-                st.json(eval_result)
-            else:
-                st.json(eval_result)
-            
-            st.subheader("Distribusi Cluster")
-            st.dataframe(df_videos.groupby("Cluster")[["views", "likes", "comments"]].mean().round(2))
+            st.json(eval_result)
 
+            st.subheader("Distribusi Rata-rata per Cluster")
+            cluster_summary = df_result.groupby("Cluster")[["views", "likes", "comments", "engagement_rate"]].mean().round(2)
+            st.dataframe(cluster_summary)
 
             # ------------------------- VISUALISASI -------------------------
             st.header("Visualisasi Hasil Clustering")
@@ -122,22 +80,13 @@ if start_button:
             fig_pca = plot_pca_clusters(df_pca, cluster_labels)
             st.pyplot(fig_pca)
 
-            st.subheader("3D Plot: Views, Likes, Comments")
-            fig_3d = plot_3d_scatter(df_normalized, cluster_labels)
+            st.subheader("3D Plot: Views, Likes, Engagement Rate")
+            fig_3d = plot_3d_scatter(df_result, cluster_labels)
             st.plotly_chart(fig_3d)
 
-            # ------------------------- INSIGHT -------------------------
-            st.header("Insight per Cluster")
-            cluster_summary = df_videos.groupby("Cluster")[["views", "likes", "comments"]].mean().round(2)
-            st.dataframe(cluster_summary)
-
-            if -1 in df_videos['Cluster'].values:
-                noise_count = (df_videos['Cluster'] == -1).sum()
-                st.warning(f"Terdapat {noise_count} video yang dianggap noise (Cluster -1) oleh DBSCAN.")
-
+            # ------------------------- UNDUH HASIL -------------------------
             st.success("Proses analisis selesai!")
-            
-            csv = df_videos.to_csv(index=False).encode('utf-8')
+            csv = df_result.to_csv(index=False).encode('utf-8')
             st.download_button(
                 label="Unduh Hasil Analisis (CSV)",
                 data=csv,
