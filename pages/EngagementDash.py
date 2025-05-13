@@ -63,6 +63,38 @@ if start_button:
 
             st.success(f"Clustering berhasil menggunakan KMeans (k = {n_clusters})")
 
+            # ------------------------- ENGAGEMENT RATE -------------------------
+            df_videos = df_videos.loc[df_cleaned.index].copy()
+            df_videos["Cluster"] = cluster_labels
+
+            # Evaluasi dan tampilkan cluster summary
+            eval_result = evaluate_clustering(df_normalized, cluster_labels)
+            st.json(eval_result)
+
+            # Baru Analisis Engagement Rate
+            if "Cluster" in df_videos.columns:
+                st.header("Analisis Engagement Rate")
+
+                df_videos["engagement_rate"] = (
+                    (df_videos["likes"] + df_videos["comments"]) / df_videos["views"]
+                ).replace([float('inf'), -float('inf')], 0).fillna(0)
+
+                engagement_summary = df_videos.groupby("Cluster")["engagement_rate"].mean().reset_index()
+                engagement_summary.columns = ["Cluster", "Rata-rata Engagement Rate"]
+
+                import matplotlib.pyplot as plt
+                import seaborn as sns
+
+                fig_engage, ax = plt.subplots(figsize=(10, 5))
+                sns.barplot(data=engagement_summary, x="Cluster", y="Rata-rata Engagement Rate", palette="Blues_d", ax=ax)
+                ax.set_title("Rata-rata Engagement Rate per Cluster")
+                ax.set_xlabel("Cluster")
+                ax.set_ylabel("Engagement Rate")
+                st.pyplot(fig_engage)
+            else:
+                st.warning("Pastikan proses clustering berhasil sebelum menampilkan engagement rate.")
+
+
             # ------------------------- EVALUASI -------------------------
             eval_result = evaluate_clustering(df_normalized, cluster_labels)
 
