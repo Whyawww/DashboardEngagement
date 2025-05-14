@@ -7,11 +7,11 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 SRC_PATH = os.path.join(PROJECT_ROOT, 'src')
 if SRC_PATH not in sys.path:
     sys.path.append(SRC_PATH)
-from preprocessing import add_engagement_rate, handle_outliers_iqr, normalize_minmax, apply_pca
-from fetch_data import get_videos_from_playlist, get_video_statistics
-from clustering import kmeans_clustering
-from evaluation import evaluate_clustering
-from visualization import plot_correlation_heatmap, plot_pca_clusters, plot_3d_scatter
+from src.preprocessing import add_engagement_rate, handle_outliers_iqr, normalize_minmax, apply_pca
+from src.fetch_data import get_videos_from_playlist, get_video_statistics
+from src.clustering import kmeans_clustering
+from src.evaluation import evaluate_clustering
+from src.visualization import plot_correlation_heatmap, plot_pca_clusters, plot_3d_scatter
 
 # KONFIGURASI HALAMAN
 st.set_page_config(page_title="Dashboard Analisis | YouTube Engagement Analyzer", layout="wide")
