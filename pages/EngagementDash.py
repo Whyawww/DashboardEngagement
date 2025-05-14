@@ -11,7 +11,7 @@ from src.visualization import plot_correlation_heatmap, plot_pca_clusters, plot_
 st.set_page_config(page_title="Dashboard Analisis | YouTube Engagement Analyzer", layout="wide")
 
 st.title("Engagement Dashboard")
-st.markdown("🔍 Analisis interaktif pola engagement audiens berdasarkan data dari channel YouTube.")
+st.markdown("Analisis interaktif pola engagement audiens berdasarkan data dari channel YouTube.")
 
 # ------------------------- SIDEBAR -------------------------
 st.sidebar.title("Konfigurasi Analisis")
