@@ -1,10 +1,7 @@
 import streamlit as st
 import pandas as pd
+import os
 import sys
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-SRC_PATH = os.path.join(PROJECT_ROOT, 'src')
-if SRC_PATH not in sys.path:
-    sys.path.append(SRC_PATH)
 from preprocessing import add_engagement_rate, handle_outliers_iqr, normalize_minmax, apply_pca
 from fetch_data import get_videos_from_playlist, get_video_statistics
 from clustering import kmeans_clustering
@@ -31,6 +28,9 @@ if start_button:
         try:
             with st.spinner("Mengambil data dari YouTube API..."):
                 video_ids = get_videos_from_playlist(playlist_id)
+                if not video_ids:
+                    raise Exception("Playlist ID tidak valid atau tidak ada video di playlist.")
+
                 df_videos = get_video_statistics(video_ids)
                 df_videos = add_engagement_rate(df_videos)
 
@@ -133,3 +133,4 @@ if start_button:
         except Exception as e:
             st.error(f"Terjadi kesalahan: {e}")
             st.warning("Pastikan Playlist ID yang dimasukkan benar.")
+
